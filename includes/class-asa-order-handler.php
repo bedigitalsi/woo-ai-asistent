@@ -89,8 +89,20 @@ class ASA_Order_Handler {
 			return new WP_Error( 'invalid_phone', __( 'Phone number is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
 		}
 
-		if ( empty( $customer['address'] ) ) {
-			return new WP_Error( 'invalid_address', __( 'Delivery address is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		if ( empty( $customer['first_name'] ) ) {
+			return new WP_Error( 'invalid_name', __( 'First name is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $customer['address_1'] ) ) {
+			return new WP_Error( 'invalid_address', __( 'Street address is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $customer['city'] ) ) {
+			return new WP_Error( 'invalid_city', __( 'City is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $customer['postcode'] ) ) {
+			return new WP_Error( 'invalid_postcode', __( 'Postal code is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
 		}
 
 		// Create order
@@ -186,51 +198,23 @@ class ASA_Order_Handler {
 				$order->set_billing_last_name( $user->last_name );
 			}
 		} elseif ( ! empty( $customer ) ) {
-			// Guest order - set all required customer data
+			// Guest order - set all required customer data from structured fields
 			$order->set_billing_email( sanitize_email( $customer['email'] ) );
 			$order->set_billing_phone( sanitize_text_field( $customer['phone'] ) );
-
-			// Parse address - try to extract components
-			$address = sanitize_textarea_field( $customer['address'] );
-			$address_parts = $this->parse_address( $address );
-			
-			$order->set_billing_address_1( $address_parts['street'] );
-			if ( ! empty( $address_parts['city'] ) ) {
-				$order->set_billing_city( $address_parts['city'] );
-			}
-			if ( ! empty( $address_parts['postcode'] ) ) {
-				$order->set_billing_postcode( $address_parts['postcode'] );
-			}
-			if ( ! empty( $address_parts['country'] ) ) {
-				$order->set_billing_country( $address_parts['country'] );
-			}
+			$order->set_billing_first_name( sanitize_text_field( $customer['first_name'] ) );
+			$order->set_billing_last_name( sanitize_text_field( $customer['last_name'] ) );
+			$order->set_billing_address_1( sanitize_text_field( $customer['address_1'] ) );
+			$order->set_billing_city( sanitize_text_field( $customer['city'] ) );
+			$order->set_billing_postcode( sanitize_text_field( $customer['postcode'] ) );
+			$order->set_billing_country( sanitize_text_field( $customer['country'] ) );
 
 			// Set shipping address same as billing
-			$order->set_shipping_address_1( $address_parts['street'] );
-			if ( ! empty( $address_parts['city'] ) ) {
-				$order->set_shipping_city( $address_parts['city'] );
-			}
-			if ( ! empty( $address_parts['postcode'] ) ) {
-				$order->set_shipping_postcode( $address_parts['postcode'] );
-			}
-			if ( ! empty( $address_parts['country'] ) ) {
-				$order->set_shipping_country( $address_parts['country'] );
-			}
-
-			// Set customer name if provided
-			if ( isset( $customer['name'] ) && ! empty( $customer['name'] ) ) {
-				$name_parts = explode( ' ', trim( $customer['name'] ), 2 );
-				$order->set_billing_first_name( sanitize_text_field( $name_parts[0] ) );
-				if ( isset( $name_parts[1] ) ) {
-					$order->set_billing_last_name( sanitize_text_field( $name_parts[1] ) );
-					$order->set_shipping_first_name( sanitize_text_field( $name_parts[0] ) );
-					$order->set_shipping_last_name( sanitize_text_field( $name_parts[1] ) );
-				} else {
-					$order->set_billing_last_name( '' );
-					$order->set_shipping_first_name( sanitize_text_field( $name_parts[0] ) );
-					$order->set_shipping_last_name( '' );
-				}
-			}
+			$order->set_shipping_first_name( sanitize_text_field( $customer['first_name'] ) );
+			$order->set_shipping_last_name( sanitize_text_field( $customer['last_name'] ) );
+			$order->set_shipping_address_1( sanitize_text_field( $customer['address_1'] ) );
+			$order->set_shipping_city( sanitize_text_field( $customer['city'] ) );
+			$order->set_shipping_postcode( sanitize_text_field( $customer['postcode'] ) );
+			$order->set_shipping_country( sanitize_text_field( $customer['country'] ) );
 		}
 
 		// Set payment method to Cash on Delivery

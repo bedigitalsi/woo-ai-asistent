@@ -115,9 +115,10 @@ class ASA_Chat_Endpoint {
 		}
 
 		$messages = $request->get_param( 'messages' );
+		$mode = $request->get_param( 'mode' ) ? $request->get_param( 'mode' ) : 'chat';
 
 		// Build system message with context
-		$system_message = $this->build_system_message();
+		$system_message = $this->build_system_message( $mode );
 
 		// Prepare messages for OpenAI
 		$openai_messages = array(
@@ -147,7 +148,7 @@ class ASA_Chat_Endpoint {
 		}
 
 		// Parse response
-		$parsed = $this->parse_response( $response );
+		$parsed = $this->parse_response( $response, $mode );
 
 		return rest_ensure_response( $parsed );
 	}
@@ -155,9 +156,10 @@ class ASA_Chat_Endpoint {
 	/**
 	 * Build system message with context.
 	 *
+	 * @param string $mode Current chat mode ('chat' or 'checkout').
 	 * @return string System message content.
 	 */
-	private function build_system_message() {
+	private function build_system_message( $mode = 'chat' ) {
 		$system_prompt = $this->settings->get_setting( 'system_prompt', '' );
 		$enable_products = $this->settings->get_setting( 'enable_product_suggestions', true );
 
@@ -199,7 +201,7 @@ class ASA_Chat_Endpoint {
 			// Get shipping cost for context
 			$shipping_cost = $this->get_shipping_cost_for_prompt();
 			
-			$parts[] = "\n\n## Order Creation:\nYou can help customers create orders via chat. When a customer wants to place an order, you MUST collect ALL of the following information before creating the order:\n\nREQUIRED INFORMATION:\n1. Products they want (product IDs and quantities) - ask which products and how many\n2. Customer email address - ask for a valid email\n3. Customer phone number - ask for phone number for delivery coordination\n4. Full delivery address - ask for complete address including street, city, postal code, and country\n\nIMPORTANT ORDER CREATION RULES:\n- Do NOT create an order until you have ALL required information listed above\n- If ANY information is missing, politely but firmly ask for it. Explain why each piece is needed\n- Be persistent - don't create an order with incomplete information\n- Always inform the customer about shipping costs: Standard shipping cost is approximately " . $shipping_cost . "\n- Payment method is Cash on Delivery (customer pays when receiving the order)\n- Always calculate and confirm the total order amount (products + shipping) before creating\n- When you have ALL required information, respond ONLY with valid JSON (no markdown, no code blocks, no explanations outside JSON):\n{\n  \"assistant_reply\": \"Perfect! I have all the information. Your order total will be [amount] including shipping. Creating your order now...\",\n  \"products\": [],\n  \"order\": {\n    \"products\": [{\"id\": 123, \"qty\": 1}],\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"Street 123\\nCity, Postal Code\\nCountry\"\n  }\n}\n\nCRITICAL: Your response MUST be ONLY the JSON object above, nothing else. Do NOT wrap it in markdown code blocks, do NOT add explanations before or after. Just return the raw JSON.\n- The address should be formatted with line breaks (\\n) for better readability\n- Be friendly, helpful, and professional when collecting information\n- If customer refuses to provide required information, politely explain that you cannot create an order without it";
+			$parts[] = "\n\n## Order Creation:\nWhen customers want to place an order, you can help them by:\n- Confirming which products they want to order\n- Providing product recommendations with product IDs\n- When they express intent to order (e.g., \"I want to order\", \"buy this\", \"checkout\"), acknowledge it and suggest they proceed\n- Payment method is Cash on Delivery\n- Shipping cost is approximately " . $shipping_cost . "\n\nIMPORTANT: Do NOT try to collect customer details (email, phone, address) in chat mode. The system will handle order collection through a structured checkout process. Just help with product selection and confirm when they're ready to order.";
 		}
 
 		return implode( '', $parts );
@@ -268,9 +270,10 @@ class ASA_Chat_Endpoint {
 	 * Parse OpenAI response and extract structured data.
 	 *
 	 * @param string $response Raw response from OpenAI.
+	 * @param string $mode Current chat mode.
 	 * @return array Parsed response with assistant_reply and products.
 	 */
-	private function parse_response( $response ) {
+	private function parse_response( $response, $mode = 'chat' ) {
 		// Clean response - remove markdown code blocks if present
 		$cleaned_response = trim( $response );
 		
@@ -329,12 +332,16 @@ class ASA_Chat_Endpoint {
 				'products'        => $validated_products,
 			);
 
-			// If order data is present, validate and include it
-			if ( $order_data ) {
-				$validated_order = $this->validate_order_data( $order_data );
-				// Only include order if validation passed
-				if ( $validated_order !== null ) {
-					$result['order'] = $validated_order;
+			// Check if AI suggests starting checkout (when products are recommended and user shows order intent)
+			if ( $mode === 'chat' && ! empty( $validated_products ) ) {
+				// Check if assistant reply suggests checkout
+				$checkout_keywords = array( 'order', 'checkout', 'buy', 'purchase', 'proceed' );
+				$reply_lower = strtolower( $assistant_reply );
+				foreach ( $checkout_keywords as $keyword ) {
+					if ( strpos( $reply_lower, $keyword ) !== false ) {
+						$result['suggest_checkout'] = true;
+						break;
+					}
 				}
 			}
 
