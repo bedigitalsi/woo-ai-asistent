@@ -56,6 +56,7 @@ class ASA_Updater {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_updates' ) );
 		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 10, 3 );
 		add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
+		add_filter( 'upgrader_source_selection', array( $this, 'source_selection' ), 10, 4 );
 	}
 
 	/**
@@ -324,6 +325,58 @@ class ASA_Updater {
 	}
 
 	/**
+	 * Filter the source file location for the upgrade package.
+	 * This ensures WordPress extracts to the correct plugin folder.
+	 *
+	 * @param string      $source        File source location.
+	 * @param string      $remote_source Remote file source location.
+	 * @param WP_Upgrader $upgrader      WP_Upgrader instance.
+	 * @param array       $hook_extra    Extra arguments.
+	 * @return string Modified source location.
+	 */
+	public function source_selection( $source, $remote_source, $upgrader, $hook_extra ) {
+		// Only process our plugin
+		if ( ! isset( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== plugin_basename( $this->plugin_file ) ) {
+			return $source;
+		}
+
+		global $wp_filesystem;
+
+		$plugin_slug = dirname( plugin_basename( $this->plugin_file ) );
+		$correct_source = trailingslashit( dirname( $source ) ) . $plugin_slug . '/';
+
+		// If source is different from correct source, we need to rename
+		if ( $source !== $correct_source && $wp_filesystem->exists( $source ) ) {
+			// Check if there's a versioned folder inside
+			$files = $wp_filesystem->dirlist( $source );
+			if ( $files ) {
+				foreach ( $files as $file ) {
+					if ( $file['type'] === 'd' ) {
+						$folder_name = $file['name'];
+						// If this is a versioned folder, rename it to plugin slug
+						if ( strpos( $folder_name, 'woo-ai-asistent' ) !== false || preg_match( '/v?\d+\.\d+\.\d+/', $folder_name ) ) {
+							$versioned_path = trailingslashit( $source ) . $folder_name;
+							if ( $wp_filesystem->exists( $versioned_path ) ) {
+								$wp_filesystem->move( $versioned_path, $correct_source, true );
+								// Clean up old source if empty
+								if ( $wp_filesystem->exists( $source ) ) {
+									$remaining = $wp_filesystem->dirlist( $source );
+									if ( empty( $remaining ) ) {
+										$wp_filesystem->rmdir( $source, true );
+									}
+								}
+								return $correct_source;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $source;
+	}
+
+	/**
 	 * Handle post-install actions.
 	 *
 	 * @param bool  $response Installation response.
@@ -341,56 +394,98 @@ class ASA_Updater {
 		}
 
 		$install_directory = plugin_dir_path( $this->plugin_file );
-		
-		// GitHub ZIP files extract to a folder named "woo-ai-asistent-v1.0.0"
-		// We need to move contents from that folder to the plugin directory
 		$extracted_folder = trailingslashit( $result['destination'] );
 		
-		// Check if we need to move files from subdirectory
+		// GitHub ZIP files extract to a folder named "woo-ai-asistent-v1.0.0" or similar
+		// We need to find and move contents from that folder to the plugin directory
 		$files = $wp_filesystem->dirlist( $extracted_folder );
-		if ( $files && count( $files ) === 1 ) {
-			// Only one item, likely the versioned folder
-			foreach ( $files as $file ) {
-				if ( $file['type'] === 'd' ) {
-					// It's a directory, move its contents up
-					$versioned_folder = trailingslashit( $extracted_folder . $file['name'] );
-					$versioned_files = $wp_filesystem->dirlist( $versioned_folder );
-					if ( $versioned_files ) {
-						foreach ( $versioned_files as $versioned_file ) {
-							$wp_filesystem->move(
-								$versioned_folder . $versioned_file['name'],
-								$install_directory . $versioned_file['name'],
-								true
-							);
-						}
-					}
-					// Remove the versioned folder
-					$wp_filesystem->rmdir( $versioned_folder, true );
+		
+		if ( ! $files ) {
+			return $response;
+		}
+
+		// Look for a folder that starts with "woo-ai-asistent" or contains version number
+		$versioned_folder = null;
+		foreach ( $files as $file ) {
+			if ( $file['type'] === 'd' ) {
+				$folder_name = $file['name'];
+				// Check if this looks like a versioned folder
+				if ( strpos( $folder_name, 'woo-ai-asistent' ) !== false || preg_match( '/v?\d+\.\d+\.\d+/', $folder_name ) ) {
+					$versioned_folder = trailingslashit( $extracted_folder . $folder_name );
+					break;
 				}
-			}
-		} else {
-			// Files are directly in the extracted folder, move them
-			foreach ( $files as $file ) {
-				$wp_filesystem->move(
-					$extracted_folder . $file['name'],
-					$install_directory . $file['name'],
-					true
-				);
 			}
 		}
 
-		// Remove the temporary extraction directory
-		$wp_filesystem->rmdir( $extracted_folder, true );
+		// If we found a versioned folder, move its contents
+		if ( $versioned_folder && $wp_filesystem->exists( $versioned_folder ) ) {
+			$versioned_files = $wp_filesystem->dirlist( $versioned_folder );
+			if ( $versioned_files ) {
+				foreach ( $versioned_files as $versioned_file ) {
+					$source = $versioned_folder . $versioned_file['name'];
+					$destination = $install_directory . $versioned_file['name'];
+					
+					// Remove destination if it exists (for updates)
+					if ( $wp_filesystem->exists( $destination ) ) {
+						if ( $versioned_file['type'] === 'd' ) {
+							$wp_filesystem->rmdir( $destination, true );
+						} else {
+							$wp_filesystem->delete( $destination );
+						}
+					}
+					
+					// Move file/directory
+					$wp_filesystem->move( $source, $destination, true );
+				}
+			}
+			// Remove the versioned folder
+			$wp_filesystem->rmdir( $versioned_folder, true );
+		} else {
+			// No versioned folder found, files might be directly extracted
+			// Move files directly to plugin directory
+			foreach ( $files as $file ) {
+				$source = $extracted_folder . $file['name'];
+				$destination = $install_directory . $file['name'];
+				
+				// Skip if source and destination are the same
+				if ( $source === $destination ) {
+					continue;
+				}
+				
+				// Remove destination if it exists (for updates)
+				if ( $wp_filesystem->exists( $destination ) ) {
+					if ( $file['type'] === 'd' ) {
+						$wp_filesystem->rmdir( $destination, true );
+					} else {
+						$wp_filesystem->delete( $destination );
+					}
+				}
+				
+				// Move file/directory
+				$wp_filesystem->move( $source, $destination, true );
+			}
+		}
 
+		// Remove the temporary extraction directory if it's empty
+		if ( $wp_filesystem->exists( $extracted_folder ) ) {
+			$remaining_files = $wp_filesystem->dirlist( $extracted_folder );
+			if ( empty( $remaining_files ) ) {
+				$wp_filesystem->rmdir( $extracted_folder, true );
+			}
+		}
+
+		// Update result destination
 		$result['destination'] = $install_directory;
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
-		// Reactivate plugin if it was active
-		if ( is_plugin_active( plugin_basename( $this->plugin_file ) ) ) {
-			activate_plugin( plugin_basename( $this->plugin_file ) );
+		// Reactivate plugin if it was active before update
+		$plugin_basename = plugin_basename( $this->plugin_file );
+		if ( ! is_plugin_active( $plugin_basename ) ) {
+			// Try to reactivate - WordPress might have deactivated it due to folder mismatch
+			activate_plugin( $plugin_basename );
 		}
 
 		return $response;
