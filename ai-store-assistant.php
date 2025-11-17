@@ -3,7 +3,7 @@
  * Plugin Name: AI Store Assistant
  * Plugin URI: https://github.com/bedigitalsi/woo-ai-asistent
  * Description: A WordPress plugin that integrates with OpenAI API to provide a product-aware chatbot on WooCommerce stores.
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: beDigital SI
  * Author URI: https://github.com/bedigitalsi
  * Text Domain: ai-store-assistant
@@ -26,7 +26,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently plugin version.
  */
-define( 'ASA_VERSION', '1.0.0' );
+define( 'ASA_VERSION', '1.0.2' );
 define( 'ASA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ASA_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'ASA_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
