@@ -104,7 +104,7 @@ class ASA_Frontend {
 					<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
 			</div>
-			<div id="asa-chat-panel" class="asa-chat-panel" style="display: none;">
+			<div id="asa-chat-panel" class="asa-chat-panel">
 				<div class="asa-chat-header">
 					<div class="asa-chat-header-left">
 						<?php

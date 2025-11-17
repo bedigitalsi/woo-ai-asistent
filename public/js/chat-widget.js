@@ -9,19 +9,17 @@
 
 	// Check if required data is available
 	if ( typeof asaChatData === 'undefined' ) {
+		console.error( 'ASA: asaChatData not defined' );
 		return;
 	}
 
-	const chatButton = document.getElementById( 'asa-chat-button' );
-	const chatPanel = document.getElementById( 'asa-chat-panel' );
-	const chatClose = document.getElementById( 'asa-chat-close' );
-	const chatMessages = document.getElementById( 'asa-chat-messages' );
-	const chatInput = document.getElementById( 'asa-chat-input' );
-	const chatSend = document.getElementById( 'asa-chat-send' );
-
-	if ( ! chatButton || ! chatPanel || ! chatMessages || ! chatInput || ! chatSend ) {
-		return;
-	}
+	// Element references (will be set in init)
+	let chatButton;
+	let chatPanel;
+	let chatClose;
+	let chatMessages;
+	let chatInput;
+	let chatSend;
 
 	let messages = [];
 	let isLoading = false;
@@ -57,15 +55,56 @@
 
 	// Initialize chat
 	function init() {
+		// Get elements
+		chatButton = document.getElementById( 'asa-chat-button' );
+		chatPanel = document.getElementById( 'asa-chat-panel' );
+		chatClose = document.getElementById( 'asa-chat-close' );
+		chatMessages = document.getElementById( 'asa-chat-messages' );
+		chatInput = document.getElementById( 'asa-chat-input' );
+		chatSend = document.getElementById( 'asa-chat-send' );
+
+		console.log( 'ASA: Initializing chat widget' );
+		console.log( 'ASA: Chat button:', chatButton );
+		console.log( 'ASA: Chat panel:', chatPanel );
+
+		if ( ! chatButton ) {
+			console.error( 'ASA: Chat button not found' );
+			return;
+		}
+		if ( ! chatPanel ) {
+			console.error( 'ASA: Chat panel not found' );
+			return;
+		}
+		if ( ! chatMessages ) {
+			console.error( 'ASA: Chat messages container not found' );
+			return;
+		}
+		if ( ! chatInput ) {
+			console.error( 'ASA: Chat input not found' );
+			return;
+		}
+		if ( ! chatSend ) {
+			console.error( 'ASA: Chat send button not found' );
+			return;
+		}
+		
 		chatButton.addEventListener( 'click', toggleChat );
-		chatClose.addEventListener( 'click', closeChat );
-		chatSend.addEventListener( 'click', sendMessage );
-		chatInput.addEventListener( 'keypress', function( e ) {
-			if ( e.key === 'Enter' && ! e.shiftKey ) {
-				e.preventDefault();
-				sendMessage();
-			}
-		});
+		console.log( 'ASA: Click listener added to button' );
+		
+		if ( chatClose ) {
+			chatClose.addEventListener( 'click', closeChat );
+		}
+		if ( chatSend ) {
+			chatSend.addEventListener( 'click', sendMessage );
+		}
+		if ( chatInput ) {
+			chatInput.addEventListener( 'keypress', function( e ) {
+				if ( e.key === 'Enter' && ! e.shiftKey ) {
+					e.preventDefault();
+					sendMessage();
+				}
+			});
+		}
 
 		// Set widget title
 		if ( asaChatData.widgetTitle ) {
@@ -112,8 +151,14 @@
 	}
 
 	// Toggle chat panel
-	function toggleChat() {
+	function toggleChat( e ) {
+		if ( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		console.log( 'ASA: Toggle chat clicked, current state:', chatPanel.classList.contains( 'asa-chat-open' ) );
 		chatPanel.classList.toggle( 'asa-chat-open' );
+		console.log( 'ASA: After toggle, state:', chatPanel.classList.contains( 'asa-chat-open' ) );
 		if ( chatPanel.classList.contains( 'asa-chat-open' ) ) {
 			chatInput.focus();
 			scrollToBottom();
@@ -575,9 +620,24 @@
 	}
 
 	// Initialize when DOM is ready
-	if ( document.readyState === 'loading' ) {
-		document.addEventListener( 'DOMContentLoaded', init );
-	} else {
+	function startInit() {
+		// Double-check elements exist
+		const btn = document.getElementById( 'asa-chat-button' );
+		const panel = document.getElementById( 'asa-chat-panel' );
+		
+		if ( ! btn || ! panel ) {
+			console.error( 'ASA: Elements not found, retrying...' );
+			setTimeout( startInit, 100 );
+			return;
+		}
+		
 		init();
+	}
+
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', startInit );
+	} else {
+		// Small delay to ensure all scripts/styles are loaded
+		setTimeout( startInit, 50 );
 	}
 })();

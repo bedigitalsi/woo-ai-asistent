@@ -55,7 +55,7 @@
 }
 
 .asa-chat-panel.asa-chat-open {
-	display: flex;
+	display: flex !important;
 }
 
 /* Chat Header */
