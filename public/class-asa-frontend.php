@@ -49,6 +49,11 @@ class ASA_Frontend {
 			ASA_VERSION
 		);
 
+		// Add inline CSS for custom color
+		$widget_color = $this->settings->get_setting( 'chat_widget_color', '#0073aa' );
+		$custom_css = $this->get_custom_color_css( $widget_color );
+		wp_add_inline_style( 'asa-chat-widget-css', $custom_css );
+
 		wp_enqueue_script(
 			'asa-chat-widget-js',
 			ASA_PLUGIN_URL . 'public/js/chat-widget.js',
@@ -105,6 +110,82 @@ class ASA_Frontend {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Get custom color CSS for the chat widget.
+	 *
+	 * @param string $color Hex color code.
+	 * @return string CSS rules.
+	 */
+	private function get_custom_color_css( $color ) {
+		// Calculate darker shade for hover states (reduce brightness by 15%)
+		$color_rgb = $this->hex_to_rgb( $color );
+		$darker_color = $this->darken_color( $color_rgb, 0.15 );
+
+		$css = "
+		.asa-chat-button {
+			background: {$color} !important;
+		}
+		.asa-chat-button:hover {
+			background: {$darker_color} !important;
+		}
+		.asa-chat-header {
+			background: {$color} !important;
+		}
+		.asa-chat-message-user .asa-chat-message-content {
+			background: {$color} !important;
+		}
+		.asa-chat-product-price {
+			color: {$color} !important;
+		}
+		.asa-chat-product-button {
+			background: {$color} !important;
+		}
+		.asa-chat-product-button:hover {
+			background: {$darker_color} !important;
+		}
+		.asa-chat-send {
+			background: {$color} !important;
+		}
+		.asa-chat-send:hover:not(:disabled) {
+			background: {$darker_color} !important;
+		}
+		.asa-chat-input:focus {
+			border-color: {$color} !important;
+		}
+		";
+
+		return $css;
+	}
+
+	/**
+	 * Convert hex color to RGB array.
+	 *
+	 * @param string $hex Hex color code.
+	 * @return array RGB values.
+	 */
+	private function hex_to_rgb( $hex ) {
+		$hex = ltrim( $hex, '#' );
+		return array(
+			'r' => hexdec( substr( $hex, 0, 2 ) ),
+			'g' => hexdec( substr( $hex, 2, 2 ) ),
+			'b' => hexdec( substr( $hex, 4, 2 ) ),
+		);
+	}
+
+	/**
+	 * Darken a color by a percentage.
+	 *
+	 * @param array $rgb RGB color array.
+	 * @param float $percent Percentage to darken (0-1).
+	 * @return string Hex color code.
+	 */
+	private function darken_color( $rgb, $percent ) {
+		$r = max( 0, min( 255, $rgb['r'] * ( 1 - $percent ) ) );
+		$g = max( 0, min( 255, $rgb['g'] * ( 1 - $percent ) ) );
+		$b = max( 0, min( 255, $rgb['b'] * ( 1 - $percent ) ) );
+		return sprintf( '#%02x%02x%02x', $r, $g, $b );
 	}
 }
 

@@ -84,6 +84,11 @@
 				const productsDiv = document.createElement( 'div' );
 				productsDiv.className = 'asa-chat-products';
 
+				// Add class for side-by-side layout when there are exactly 2 products
+				if ( products.length === 2 ) {
+					productsDiv.className += ' asa-chat-products-two';
+				}
+
 				products.forEach( function( product ) {
 					const productCard = document.createElement( 'div' );
 					productCard.className = 'asa-chat-product-card';

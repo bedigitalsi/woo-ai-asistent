@@ -8,8 +8,18 @@
 	'use strict';
 
 	$(document).ready(function() {
-		// Add any admin-specific JavaScript here if needed
-		console.log('AI Store Assistant admin loaded');
+		// Initialize WordPress color picker
+		if ($.fn.wpColorPicker) {
+			$('.asa-color-picker').wpColorPicker({
+				change: function(event, ui) {
+					// Color picker change handler
+				},
+				clear: function() {
+					// Reset to default color
+					$(this).wpColorPicker('color', '#0073aa');
+				}
+			});
+		}
 	});
 })(jQuery);
 

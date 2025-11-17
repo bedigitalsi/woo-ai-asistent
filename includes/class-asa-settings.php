@@ -41,6 +41,7 @@ class ASA_Settings {
 		'enable_product_suggestions' => true,
 		'enable_order_creation'    => false,
 		'max_knowledge_items'      => 20,
+		'chat_widget_color'        => '#0073aa',
 	);
 
 	/**
@@ -118,6 +119,21 @@ class ASA_Settings {
 			'asa_settings_page',
 			'asa_main_section'
 		);
+
+		add_settings_section(
+			'asa_appearance_section',
+			__( 'Appearance', 'ai-store-assistant' ),
+			array( $this, 'appearance_section_callback' ),
+			'asa_settings_page'
+		);
+
+		add_settings_field(
+			'chat_widget_color',
+			__( 'Chat Widget Color', 'ai-store-assistant' ),
+			array( $this, 'chat_widget_color_field_callback' ),
+			'asa_settings_page',
+			'asa_appearance_section'
+		);
 	}
 
 	/**
@@ -165,6 +181,13 @@ class ASA_Settings {
 			$sanitized['max_knowledge_items'] = absint( $input['max_knowledge_items'] );
 		} else {
 			$sanitized['max_knowledge_items'] = $existing['max_knowledge_items'];
+		}
+
+		if ( isset( $input['chat_widget_color'] ) ) {
+			$color = sanitize_hex_color( $input['chat_widget_color'] );
+			$sanitized['chat_widget_color'] = $color ? $color : '#0073aa';
+		} else {
+			$sanitized['chat_widget_color'] = $existing['chat_widget_color'];
 		}
 
 		return wp_parse_args( $sanitized, $this->defaults );
@@ -250,6 +273,25 @@ class ASA_Settings {
 		?>
 		<input type="number" name="asa_settings[max_knowledge_items]" value="<?php echo esc_attr( $value ); ?>" min="1" max="100" />
 		<p class="description"><?php esc_html_e( 'Maximum number of knowledge base items to include in context (1-100)', 'ai-store-assistant' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Appearance section callback.
+	 */
+	public function appearance_section_callback() {
+		echo '<p>' . esc_html__( 'Customize the appearance of the chat widget.', 'ai-store-assistant' ) . '</p>';
+	}
+
+	/**
+	 * Chat widget color field callback.
+	 */
+	public function chat_widget_color_field_callback() {
+		$settings = $this->get_settings();
+		$value    = isset( $settings['chat_widget_color'] ) ? $settings['chat_widget_color'] : '#0073aa';
+		?>
+		<input type="color" name="asa_settings[chat_widget_color]" value="<?php echo esc_attr( $value ); ?>" class="asa-color-picker" />
+		<p class="description"><?php esc_html_e( 'Choose the main color for the chat widget (button, header, and accents).', 'ai-store-assistant' ); ?></p>
 		<?php
 	}
 

@@ -170,6 +170,32 @@
 	max-width: 75%;
 }
 
+/* Side-by-side layout for 2 products */
+.asa-chat-products-two {
+	flex-direction: row !important;
+	flex-wrap: wrap;
+}
+
+.asa-chat-products-two .asa-chat-product-card {
+	flex: 1 1 calc(50% - 6px);
+	min-width: 0;
+	max-width: calc(50% - 6px);
+}
+
+/* Fallback using :has() selector for modern browsers */
+@supports selector(:has(*)) {
+	.asa-chat-products:has(.asa-chat-product-card:nth-child(2):last-child) {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.asa-chat-products:has(.asa-chat-product-card:nth-child(2):last-child) .asa-chat-product-card {
+		flex: 1 1 calc(50% - 6px);
+		min-width: 0;
+		max-width: calc(50% - 6px);
+	}
+}
+
 .asa-chat-product-card {
 	background: #fff;
 	border-radius: 8px;
@@ -287,6 +313,16 @@
 	.asa-chat-button {
 		bottom: 20px;
 		right: 20px;
+	}
+
+	/* Stack products vertically on mobile even if there are 2 */
+	.asa-chat-products-two {
+		flex-direction: column !important;
+	}
+
+	.asa-chat-products-two .asa-chat-product-card {
+		flex: 1 1 100%;
+		max-width: 100%;
 	}
 }
 
