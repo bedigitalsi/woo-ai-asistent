@@ -214,7 +214,10 @@
 
 					// Check if AI wants to create an order
 					if ( data.order && data.order.products && data.order.email && data.order.phone && data.order.address ) {
+						console.log( 'Order data detected:', data.order );
 						createOrder( data.order );
+					} else if ( data.order ) {
+						console.log( 'Order data incomplete:', data.order );
 					}
 				} else {
 					addMessage( 'assistant', asaChatData.i18n.error );

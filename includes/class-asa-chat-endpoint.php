@@ -183,7 +183,12 @@ class ASA_Chat_Endpoint {
 			}
 
 			// JSON schema instructions
-			$parts[] = "\n\n## Response Format:\nWhen suggesting products, you MUST respond with valid JSON in this exact format:\n{\n  \"assistant_reply\": \"Your text response here\",\n  \"products\": [\n    {\n      \"id\": 123,\n      \"name\": \"Product Name\",\n      \"price\": \"19.99\",\n      \"url\": \"https://example.com/product\",\n      \"image\": \"https://example.com/image.jpg\"\n    }\n  ]\n}\n\nIf no products should be suggested, return: {\"assistant_reply\": \"Your text\", \"products\": []}\n\nIMPORTANT: Always respond with valid JSON. The assistant_reply field contains your conversational response, and the products array contains product suggestions matching the user's query.";
+			$enable_orders = $this->settings->get_setting( 'enable_order_creation', false );
+			if ( $enable_orders ) {
+				$parts[] = "\n\n## Response Format:\nYou MUST ALWAYS respond with ONLY valid JSON (no markdown, no code blocks, no explanations). Use this exact format:\n{\n  \"assistant_reply\": \"Your text response here\",\n  \"products\": [\n    {\n      \"id\": 123,\n      \"name\": \"Product Name\",\n      \"price\": \"19.99\",\n      \"url\": \"https://example.com/product\",\n      \"image\": \"https://example.com/image.jpg\"\n    }\n  ],\n  \"order\": null\n}\n\nIf no products should be suggested, return: {\"assistant_reply\": \"Your text\", \"products\": [], \"order\": null}\n\nCRITICAL: Return ONLY the JSON object, nothing else. No markdown formatting, no code blocks, no text before or after.";
+			} else {
+				$parts[] = "\n\n## Response Format:\nWhen suggesting products, you MUST respond with valid JSON in this exact format:\n{\n  \"assistant_reply\": \"Your text response here\",\n  \"products\": [\n    {\n      \"id\": 123,\n      \"name\": \"Product Name\",\n      \"price\": \"19.99\",\n      \"url\": \"https://example.com/product\",\n      \"image\": \"https://example.com/image.jpg\"\n    }\n  ]\n}\n\nIf no products should be suggested, return: {\"assistant_reply\": \"Your text\", \"products\": []}\n\nIMPORTANT: Always respond with valid JSON. The assistant_reply field contains your conversational response, and the products array contains product suggestions matching the user's query.";
+			}
 		} else {
 			$parts[] = "\n\n## Response Format:\nRespond with valid JSON: {\"assistant_reply\": \"Your text response\", \"products\": []}";
 		}
@@ -194,7 +199,7 @@ class ASA_Chat_Endpoint {
 			// Get shipping cost for context
 			$shipping_cost = $this->get_shipping_cost_for_prompt();
 			
-			$parts[] = "\n\n## Order Creation:\nYou can help customers create orders via chat. When a customer wants to place an order, you MUST collect ALL of the following information before creating the order:\n\nREQUIRED INFORMATION:\n1. Products they want (product IDs and quantities) - ask which products and how many\n2. Customer email address - ask for a valid email\n3. Customer phone number - ask for phone number for delivery coordination\n4. Full delivery address - ask for complete address including street, city, postal code, and country\n\nIMPORTANT ORDER CREATION RULES:\n- Do NOT create an order until you have ALL required information listed above\n- If ANY information is missing, politely but firmly ask for it. Explain why each piece is needed\n- Be persistent - don't create an order with incomplete information\n- Always inform the customer about shipping costs: Standard shipping cost is approximately " . $shipping_cost . "\n- Payment method is Cash on Delivery (customer pays when receiving the order)\n- Always calculate and confirm the total order amount (products + shipping) before creating\n- When you have ALL required information, respond with JSON that includes an \"order\" object:\n{\n  \"assistant_reply\": \"Perfect! I have all the information. Your order total will be [amount] including shipping. Creating your order now...\",\n  \"products\": [],\n  \"order\": {\n    \"products\": [{\"id\": 123, \"qty\": 1}],\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"Street 123\\nCity, Postal Code\\nCountry\"\n  }\n}\n\n- The address should be formatted with line breaks (\\n) for better readability\n- Be friendly, helpful, and professional when collecting information\n- If customer refuses to provide required information, politely explain that you cannot create an order without it";
+			$parts[] = "\n\n## Order Creation:\nYou can help customers create orders via chat. When a customer wants to place an order, you MUST collect ALL of the following information before creating the order:\n\nREQUIRED INFORMATION:\n1. Products they want (product IDs and quantities) - ask which products and how many\n2. Customer email address - ask for a valid email\n3. Customer phone number - ask for phone number for delivery coordination\n4. Full delivery address - ask for complete address including street, city, postal code, and country\n\nIMPORTANT ORDER CREATION RULES:\n- Do NOT create an order until you have ALL required information listed above\n- If ANY information is missing, politely but firmly ask for it. Explain why each piece is needed\n- Be persistent - don't create an order with incomplete information\n- Always inform the customer about shipping costs: Standard shipping cost is approximately " . $shipping_cost . "\n- Payment method is Cash on Delivery (customer pays when receiving the order)\n- Always calculate and confirm the total order amount (products + shipping) before creating\n- When you have ALL required information, respond ONLY with valid JSON (no markdown, no code blocks, no explanations outside JSON):\n{\n  \"assistant_reply\": \"Perfect! I have all the information. Your order total will be [amount] including shipping. Creating your order now...\",\n  \"products\": [],\n  \"order\": {\n    \"products\": [{\"id\": 123, \"qty\": 1}],\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"Street 123\\nCity, Postal Code\\nCountry\"\n  }\n}\n\nCRITICAL: Your response MUST be ONLY the JSON object above, nothing else. Do NOT wrap it in markdown code blocks, do NOT add explanations before or after. Just return the raw JSON.\n- The address should be formatted with line breaks (\\n) for better readability\n- Be friendly, helpful, and professional when collecting information\n- If customer refuses to provide required information, politely explain that you cannot create an order without it";
 		}
 
 		return implode( '', $parts );
@@ -218,6 +223,12 @@ class ASA_Chat_Endpoint {
 			'temperature' => 0.7,
 			'max_tokens' => 1000,
 		);
+
+		// Force JSON mode if order creation is enabled (for better structured output)
+		$enable_orders = $this->settings->get_setting( 'enable_order_creation', false );
+		if ( $enable_orders ) {
+			$body['response_format'] = array( 'type' => 'json_object' );
+		}
 
 		$args = array(
 			'body'        => wp_json_encode( $body ),
@@ -260,12 +271,45 @@ class ASA_Chat_Endpoint {
 	 * @return array Parsed response with assistant_reply and products.
 	 */
 	private function parse_response( $response ) {
+		// Clean response - remove markdown code blocks if present
+		$cleaned_response = trim( $response );
+		
+		// Extract JSON from markdown code blocks (```json ... ``` or ``` ... ```)
+		// Handle multiline JSON with proper matching
+		if ( preg_match( '/```(?:json)?\s*(\{.*?\})\s*```/s', $response, $matches ) ) {
+			$cleaned_response = trim( $matches[1] );
+		} elseif ( preg_match( '/```(?:json)?\s*(\[.*?\])\s*```/s', $response, $matches ) ) {
+			$cleaned_response = trim( $matches[1] );
+		} elseif ( preg_match( '/(\{[\s\S]*\})/s', $response, $matches ) ) {
+			// Try to extract JSON object from text (including multiline)
+			$cleaned_response = trim( $matches[1] );
+		}
+		
 		// Try to parse as JSON
-		$decoded = json_decode( $response, true );
+		$decoded = json_decode( $cleaned_response, true );
+		
+		// If JSON decode failed, try to fix common issues
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			// Remove any leading/trailing text that's not JSON
+			$cleaned_response = preg_replace( '/^[^{]*/', '', $cleaned_response );
+			$cleaned_response = preg_replace( '/[^}]*$/', '', $cleaned_response );
+			$decoded = json_decode( $cleaned_response, true );
+		}
 
 		if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
 			// Valid JSON response
-			$assistant_reply = isset( $decoded['assistant_reply'] ) ? $decoded['assistant_reply'] : $response;
+			// Use assistant_reply from JSON, or extract from response if not present
+			if ( isset( $decoded['assistant_reply'] ) && ! empty( $decoded['assistant_reply'] ) ) {
+				$assistant_reply = $decoded['assistant_reply'];
+			} else {
+				// If no assistant_reply in JSON, try to extract text before JSON
+				$text_before_json = preg_replace( '/\{.*\}/s', '', $response );
+				$text_before_json = preg_replace( '/```.*?```/s', '', $text_before_json );
+				$assistant_reply = trim( $text_before_json );
+				if ( empty( $assistant_reply ) ) {
+					$assistant_reply = $response; // Fallback
+				}
+			}
 			$products = isset( $decoded['products'] ) && is_array( $decoded['products'] ) ? $decoded['products'] : array();
 			$order_data = isset( $decoded['order'] ) && is_array( $decoded['order'] ) ? $decoded['order'] : null;
 
@@ -287,7 +331,11 @@ class ASA_Chat_Endpoint {
 
 			// If order data is present, validate and include it
 			if ( $order_data ) {
-				$result['order'] = $this->validate_order_data( $order_data );
+				$validated_order = $this->validate_order_data( $order_data );
+				// Only include order if validation passed
+				if ( $validated_order !== null ) {
+					$result['order'] = $validated_order;
+				}
 			}
 
 			return $result;
