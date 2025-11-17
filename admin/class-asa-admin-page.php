@@ -128,7 +128,17 @@ class ASA_Admin_Page {
 				<h2><?php esc_html_e( 'Plugin Updates', 'ai-store-assistant' ); ?></h2>
 				<p><?php esc_html_e( 'Check for the latest version of AI Store Assistant from GitHub.', 'ai-store-assistant' ); ?></p>
 				<p>
-					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'asa_check_updates', '1', admin_url( 'admin.php?page=ai-store-assistant' ) ), 'asa_check_updates' ) ); ?>" class="button button-secondary">
+					<?php
+					$check_url = add_query_arg(
+						array(
+							'page'              => 'ai-store-assistant',
+							'asa_check_updates' => '1',
+						),
+						admin_url( 'admin.php' )
+					);
+					$check_url = wp_nonce_url( $check_url, 'asa_check_updates' );
+					?>
+					<a href="<?php echo esc_url( $check_url ); ?>" class="button button-secondary">
 						<?php esc_html_e( 'Check for Updates', 'ai-store-assistant' ); ?>
 					</a>
 					<a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>" class="button">
@@ -190,9 +200,10 @@ class ASA_Admin_Page {
 			return;
 		}
 
-		// Verify nonce
-		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'asa_check_updates' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'ai-store-assistant' ) );
+		// Verify nonce - wp_nonce_url adds _wpnonce parameter
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( $_GET['_wpnonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'asa_check_updates' ) ) {
+			wp_die( esc_html__( 'Security check failed. Please try again.', 'ai-store-assistant' ) );
 		}
 
 		// Clear update transients
