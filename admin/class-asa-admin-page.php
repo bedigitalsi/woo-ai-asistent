@@ -69,6 +69,9 @@ class ASA_Admin_Page {
 		wp_enqueue_style( 'wp-color-picker' );
 		wp_enqueue_script( 'wp-color-picker' );
 
+		// Enqueue WordPress media uploader
+		wp_enqueue_media();
+
 		wp_enqueue_script(
 			'asa-admin-js',
 			ASA_PLUGIN_URL . 'admin/js/admin.js',

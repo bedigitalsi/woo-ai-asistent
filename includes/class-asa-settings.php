@@ -44,6 +44,7 @@ class ASA_Settings {
 		'chat_widget_color'        => '#0073aa',
 		'chat_widget_title'        => 'AI Assistant',
 		'chat_welcome_message'     => 'Hello! How can I help you today?',
+		'chat_widget_image'        => '',
 	);
 
 	/**
@@ -152,6 +153,14 @@ class ASA_Settings {
 			'asa_settings_page',
 			'asa_appearance_section'
 		);
+
+		add_settings_field(
+			'chat_widget_image',
+			__( 'Assistant Avatar Image', 'ai-store-assistant' ),
+			array( $this, 'chat_widget_image_field_callback' ),
+			'asa_settings_page',
+			'asa_appearance_section'
+		);
 	}
 
 	/**
@@ -218,6 +227,12 @@ class ASA_Settings {
 			$sanitized['chat_welcome_message'] = sanitize_textarea_field( $input['chat_welcome_message'] );
 		} else {
 			$sanitized['chat_welcome_message'] = $existing['chat_welcome_message'];
+		}
+
+		if ( isset( $input['chat_widget_image'] ) ) {
+			$sanitized['chat_widget_image'] = esc_url_raw( $input['chat_widget_image'] );
+		} else {
+			$sanitized['chat_widget_image'] = $existing['chat_widget_image'];
 		}
 
 		return wp_parse_args( $sanitized, $this->defaults );
@@ -346,6 +361,33 @@ class ASA_Settings {
 		?>
 		<textarea name="asa_settings[chat_welcome_message]" rows="3" cols="50" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
 		<p class="description"><?php esc_html_e( 'The initial welcome message shown when the chat widget opens.', 'ai-store-assistant' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Chat widget image field callback.
+	 */
+	public function chat_widget_image_field_callback() {
+		$settings = $this->get_settings();
+		$image_url = isset( $settings['chat_widget_image'] ) ? $settings['chat_widget_image'] : '';
+		?>
+		<div class="asa-image-upload-wrapper">
+			<input type="hidden" name="asa_settings[chat_widget_image]" id="asa_chat_widget_image" value="<?php echo esc_attr( $image_url ); ?>" />
+			<div id="asa_image_preview" style="margin-bottom: 10px;">
+				<?php if ( $image_url ) : ?>
+					<img src="<?php echo esc_url( $image_url ); ?>" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+				<?php endif; ?>
+			</div>
+			<button type="button" class="button" id="asa_upload_image_button">
+				<?php echo $image_url ? esc_html__( 'Change Image', 'ai-store-assistant' ) : esc_html__( 'Upload Image', 'ai-store-assistant' ); ?>
+			</button>
+			<?php if ( $image_url ) : ?>
+				<button type="button" class="button" id="asa_remove_image_button" style="margin-left: 10px;">
+					<?php esc_html_e( 'Remove Image', 'ai-store-assistant' ); ?>
+				</button>
+			<?php endif; ?>
+		</div>
+		<p class="description"><?php esc_html_e( 'Upload an image (PNG, JPG, or SVG) to display next to the assistant name in the chat header.', 'ai-store-assistant' ); ?></p>
 		<?php
 	}
 

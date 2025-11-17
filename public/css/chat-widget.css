@@ -61,10 +61,26 @@
 	align-items: center;
 }
 
+.asa-chat-header-left {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+}
+
+.asa-chat-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
 .asa-chat-header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
+	flex: 1;
 }
 
 .asa-chat-close {
@@ -170,16 +186,19 @@
 	max-width: 75%;
 }
 
-/* Side-by-side layout for 2 products */
+/* Side-by-side layout for 2 products - full width */
 .asa-chat-products-two {
 	flex-direction: row !important;
 	flex-wrap: wrap;
+	gap: 12px;
+	max-width: 100% !important;
 }
 
 .asa-chat-products-two .asa-chat-product-card {
 	flex: 1 1 calc(50% - 6px);
 	min-width: 0;
 	max-width: calc(50% - 6px);
+	width: calc(50% - 6px);
 }
 
 /* Fallback using :has() selector for modern browsers */
@@ -187,12 +206,15 @@
 	.asa-chat-products:has(.asa-chat-product-card:nth-child(2):last-child) {
 		flex-direction: row;
 		flex-wrap: wrap;
+		gap: 12px;
+		max-width: 100% !important;
 	}
 
 	.asa-chat-products:has(.asa-chat-product-card:nth-child(2):last-child) .asa-chat-product-card {
 		flex: 1 1 calc(50% - 6px);
 		min-width: 0;
 		max-width: calc(50% - 6px);
+		width: calc(50% - 6px);
 	}
 }
 
@@ -218,17 +240,8 @@
 .asa-chat-product-name {
 	font-weight: 600;
 	font-size: 14px;
-	margin-bottom: 6px;
+	margin-bottom: 12px;
 	color: #333;
-}
-
-.asa-chat-product-price {
-	font-size: 16px;
-	font-weight: 700;
-	color: #0073aa;
-	margin-bottom: 10px;
-	white-space: normal;
-	word-wrap: break-word;
 	line-height: 1.4;
 }
 

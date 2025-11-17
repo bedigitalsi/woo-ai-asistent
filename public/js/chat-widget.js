@@ -117,17 +117,7 @@
 					productName.textContent = product.name;
 					productInfo.appendChild( productName );
 
-					const productPrice = document.createElement( 'div' );
-					productPrice.className = 'asa-chat-product-price';
-					// Decode HTML entities and clean up the price text
-					const priceText = product.price || '';
-					const tempDiv = document.createElement( 'div' );
-					tempDiv.innerHTML = priceText;
-					const decodedPrice = tempDiv.textContent || tempDiv.innerText || priceText;
-					// Clean up multiple spaces and normalize
-					const cleanPrice = decodedPrice.replace(/\s+/g, ' ').trim();
-					productPrice.textContent = cleanPrice;
-					productInfo.appendChild( productPrice );
+					// Price removed - only showing product name
 
 					const productButton = document.createElement( 'a' );
 					productButton.href = product.url;

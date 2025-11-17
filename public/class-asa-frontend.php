@@ -103,7 +103,15 @@ class ASA_Frontend {
 			</div>
 			<div id="asa-chat-panel" class="asa-chat-panel" style="display: none;">
 				<div class="asa-chat-header">
-					<h3 id="asa-chat-title"><?php echo esc_html( $this->settings->get_setting( 'chat_widget_title', 'AI Assistant' ) ); ?></h3>
+					<div class="asa-chat-header-left">
+						<?php
+						$avatar_image = $this->settings->get_setting( 'chat_widget_image', '' );
+						if ( ! empty( $avatar_image ) ) :
+							?>
+							<img src="<?php echo esc_url( $avatar_image ); ?>" alt="<?php esc_attr_e( 'Assistant Avatar', 'ai-store-assistant' ); ?>" class="asa-chat-avatar" />
+						<?php endif; ?>
+						<h3 id="asa-chat-title"><?php echo esc_html( $this->settings->get_setting( 'chat_widget_title', 'AI Assistant' ) ); ?></h3>
+					</div>
 					<button id="asa-chat-close" class="asa-chat-close" aria-label="<?php esc_attr_e( 'Close chat', 'ai-store-assistant' ); ?>">×</button>
 				</div>
 				<div id="asa-chat-messages" class="asa-chat-messages"></div>
