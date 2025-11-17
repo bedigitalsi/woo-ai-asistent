@@ -142,6 +142,19 @@ class ASA_Updater {
 	}
 
 	/**
+	 * Get remote version from GitHub (public method for manual checks).
+	 *
+	 * @param bool $force_skip_cache Skip cache and fetch fresh.
+	 * @return string|false Version string or false on failure.
+	 */
+	public function get_remote_version_public( $force_skip_cache = false ) {
+		if ( $force_skip_cache ) {
+			delete_transient( 'asa_remote_version' );
+		}
+		return $this->get_remote_version();
+	}
+
+	/**
 	 * Get remote version from GitHub.
 	 *
 	 * @return string|false Version string or false on failure.
