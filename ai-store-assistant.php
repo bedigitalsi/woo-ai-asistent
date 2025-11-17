@@ -50,6 +50,17 @@ function deactivate_ai_store_assistant() {
 register_deactivation_hook( __FILE__, 'deactivate_ai_store_assistant' );
 
 /**
+ * Initialize plugin updater for GitHub releases.
+ */
+function init_ai_store_assistant_updater() {
+	if ( ! class_exists( 'ASA_Updater' ) ) {
+		require_once ASA_PLUGIN_DIR . 'includes/class-asa-updater.php';
+	}
+	new ASA_Updater( __FILE__, ASA_VERSION );
+}
+add_action( 'admin_init', 'init_ai_store_assistant_updater' );
+
+/**
  * Begins execution of the plugin.
  */
 function run_ai_store_assistant() {

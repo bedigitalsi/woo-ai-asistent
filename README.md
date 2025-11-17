@@ -21,6 +21,25 @@ A WordPress plugin that integrates with the OpenAI API to provide a product-awar
 
 ## Installation
 
+### Option 1: Install from GitHub (Recommended)
+
+1. **Download the latest release**
+   - Go to [Releases](https://github.com/bedigitalsi/woo-ai-asistent/releases)
+   - Download the latest `vX.X.X.zip` file
+
+2. **Upload to WordPress**
+   - Go to WordPress admin → Plugins → Add New
+   - Click "Upload Plugin"
+   - Choose the downloaded ZIP file
+   - Click "Install Now" then "Activate"
+
+3. **Automatic Updates**
+   - Once installed, WordPress will automatically check for updates
+   - You'll see update notifications in Plugins page when new versions are released
+   - Click "Update now" to update directly from WordPress admin
+
+### Option 2: Manual Installation
+
 1. **Download or clone the repository**
    ```bash
    git clone https://github.com/bedigitalsi/woo-ai-asistent.git
@@ -175,6 +194,17 @@ ai-store-assistant/
 - Check WordPress debug log for errors
 - Ensure REST API is accessible
 
+## Updates
+
+This plugin supports **automatic updates from GitHub**. When you install from a GitHub release:
+
+- WordPress automatically checks for new versions
+- Update notifications appear in the Plugins page
+- One-click updates directly from WordPress admin
+- No need to manually download and reinstall
+
+**Note**: Updates work best when installed from a GitHub release ZIP file. See [GITHUB_RELEASES.md](GITHUB_RELEASES.md) for information on creating releases.
+
 ## Changelog
 
 ### 1.0.0
@@ -184,6 +214,7 @@ ai-store-assistant/
 - Knowledge base management
 - Floating chat widget
 - Order creation infrastructure (experimental)
+- Automatic updates from GitHub releases
 
 ## License
 
