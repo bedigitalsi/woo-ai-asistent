@@ -211,6 +211,11 @@
 				if ( data.assistant_reply ) {
 					addMessage( 'assistant', data.assistant_reply, data.products || [] );
 					messages.push( { role: 'assistant', content: data.assistant_reply } );
+
+					// Check if AI wants to create an order
+					if ( data.order && data.order.products && data.order.email && data.order.phone && data.order.address ) {
+						createOrder( data.order );
+					}
 				} else {
 					addMessage( 'assistant', asaChatData.i18n.error );
 				}
@@ -219,6 +224,81 @@
 				removeLoading();
 				addMessage( 'assistant', asaChatData.i18n.apiError );
 				console.error( 'Chat error:', error );
+			})
+			.finally( function() {
+				isLoading = false;
+				chatSend.disabled = false;
+				chatInput.disabled = false;
+				chatInput.focus();
+			});
+	}
+
+	// Create order
+	function createOrder( orderData ) {
+		// Show loading
+		isLoading = true;
+		showLoading();
+		chatSend.disabled = true;
+		chatInput.disabled = true;
+
+		const requestData = {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': asaChatData.nonce,
+			},
+			body: JSON.stringify( {
+				products: orderData.products,
+				customer: {
+					email: orderData.email,
+					phone: orderData.phone,
+					address: orderData.address,
+				},
+			} ),
+		};
+
+		fetch( asaChatData.restUrl.replace( '/chat', '/create-order' ), requestData )
+			.then( function( response ) {
+				if ( ! response.ok ) {
+					return response.json().then( function( errorData ) {
+						throw errorData;
+					});
+				}
+				return response.json();
+			})
+			.then( function( data ) {
+				removeLoading();
+
+				if ( data.order_id ) {
+					const currencySymbol = data.currency_symbol || data.currency || '';
+					const subtotal = data.subtotal || 0;
+					const shipping = data.shipping_total || 0;
+					const total = data.total || 0;
+					
+					let successMessage = 'Order #' + data.order_id + ' has been created successfully!\n\n';
+					successMessage += 'Order Details:\n';
+					successMessage += '- Subtotal: ' + currencySymbol + subtotal.toFixed(2) + '\n';
+					if ( shipping > 0 ) {
+						successMessage += '- Shipping: ' + currencySymbol + shipping.toFixed(2) + '\n';
+					}
+					successMessage += '- Total: ' + currencySymbol + total.toFixed(2) + '\n';
+					successMessage += '- Payment: Cash on Delivery\n\n';
+					successMessage += 'Thank you for your order!';
+					
+					addMessage( 'assistant', successMessage );
+					messages.push( { role: 'assistant', content: successMessage } );
+				} else if ( data.code ) {
+					// Error from server
+					const errorMessage = data.message || asaChatData.i18n.orderError || 'Unable to create order. Please try again.';
+					addMessage( 'assistant', errorMessage );
+				} else {
+					addMessage( 'assistant', asaChatData.i18n.orderError || 'Unable to create order. Please try again.' );
+				}
+			})
+			.catch( function( error ) {
+				removeLoading();
+				addMessage( 'assistant', asaChatData.i18n.orderError || 'Unable to create order. Please try again.' );
+				console.error( 'Order creation error:', error );
 			})
 			.finally( function() {
 				isLoading = false;

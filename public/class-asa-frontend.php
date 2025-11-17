@@ -81,6 +81,8 @@ class ASA_Frontend {
 					'send'            => __( 'Send', 'ai-store-assistant' ),
 					'typeMessage'     => __( 'Type your message...', 'ai-store-assistant' ),
 					'viewProduct'     => __( 'View Product', 'ai-store-assistant' ),
+					'orderSuccess'    => __( 'Order created successfully!', 'ai-store-assistant' ),
+					'orderError'      => __( 'Unable to create order. Please try again.', 'ai-store-assistant' ),
 				),
 			)
 		);

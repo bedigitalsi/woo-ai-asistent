@@ -74,6 +74,19 @@ class ASA_Order_Handler {
 			return new WP_Error( 'invalid_products', __( 'Invalid products data.', 'ai-store-assistant' ), array( 'status' => 400 ) );
 		}
 
+		// Validate required customer data
+		if ( empty( $customer['email'] ) || ! is_email( $customer['email'] ) ) {
+			return new WP_Error( 'invalid_email', __( 'Valid email address is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $customer['phone'] ) ) {
+			return new WP_Error( 'invalid_phone', __( 'Phone number is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $customer['address'] ) ) {
+			return new WP_Error( 'invalid_address', __( 'Delivery address is required.', 'ai-store-assistant' ), array( 'status' => 400 ) );
+		}
+
 		// Create order
 		$order = $this->create_order( $products, $customer );
 
@@ -81,11 +94,20 @@ class ASA_Order_Handler {
 			return $order;
 		}
 
+		// Get shipping total
+		$shipping_total = 0;
+		foreach ( $order->get_items( 'shipping' ) as $shipping_item ) {
+			$shipping_total += floatval( $shipping_item->get_total() );
+		}
+
 		return rest_ensure_response( array(
-			'order_id' => $order->get_id(),
-			'status'   => $order->get_status(),
-			'total'    => $order->get_total(),
-			'currency' => $order->get_currency(),
+			'order_id'       => $order->get_id(),
+			'status'         => $order->get_status(),
+			'total'          => $order->get_total(),
+			'subtotal'       => $order->get_subtotal(),
+			'shipping_total' => $shipping_total,
+			'currency'       => $order->get_currency(),
+			'currency_symbol' => get_woocommerce_currency_symbol(),
 		) );
 	}
 
@@ -136,28 +158,163 @@ class ASA_Order_Handler {
 				$order->set_billing_last_name( $user->last_name );
 			}
 		} elseif ( ! empty( $customer ) ) {
-			// Guest order
-			if ( isset( $customer['email'] ) ) {
-				$order->set_billing_email( sanitize_email( $customer['email'] ) );
+			// Guest order - set all required customer data
+			$order->set_billing_email( sanitize_email( $customer['email'] ) );
+			$order->set_billing_phone( sanitize_text_field( $customer['phone'] ) );
+
+			// Parse address - try to extract components
+			$address = sanitize_textarea_field( $customer['address'] );
+			$address_parts = $this->parse_address( $address );
+			
+			$order->set_billing_address_1( $address_parts['street'] );
+			if ( ! empty( $address_parts['city'] ) ) {
+				$order->set_billing_city( $address_parts['city'] );
 			}
-			if ( isset( $customer['name'] ) ) {
-				$name_parts = explode( ' ', $customer['name'], 2 );
+			if ( ! empty( $address_parts['postcode'] ) ) {
+				$order->set_billing_postcode( $address_parts['postcode'] );
+			}
+			if ( ! empty( $address_parts['country'] ) ) {
+				$order->set_billing_country( $address_parts['country'] );
+			}
+
+			// Set shipping address same as billing
+			$order->set_shipping_address_1( $address_parts['street'] );
+			if ( ! empty( $address_parts['city'] ) ) {
+				$order->set_shipping_city( $address_parts['city'] );
+			}
+			if ( ! empty( $address_parts['postcode'] ) ) {
+				$order->set_shipping_postcode( $address_parts['postcode'] );
+			}
+			if ( ! empty( $address_parts['country'] ) ) {
+				$order->set_shipping_country( $address_parts['country'] );
+			}
+
+			// Set customer name if provided
+			if ( isset( $customer['name'] ) && ! empty( $customer['name'] ) ) {
+				$name_parts = explode( ' ', trim( $customer['name'] ), 2 );
 				$order->set_billing_first_name( sanitize_text_field( $name_parts[0] ) );
 				if ( isset( $name_parts[1] ) ) {
 					$order->set_billing_last_name( sanitize_text_field( $name_parts[1] ) );
+					$order->set_shipping_first_name( sanitize_text_field( $name_parts[0] ) );
+					$order->set_shipping_last_name( sanitize_text_field( $name_parts[1] ) );
+				} else {
+					$order->set_billing_last_name( '' );
+					$order->set_shipping_first_name( sanitize_text_field( $name_parts[0] ) );
+					$order->set_shipping_last_name( '' );
 				}
 			}
-			if ( isset( $customer['address'] ) ) {
-				$order->set_billing_address_1( sanitize_text_field( $customer['address'] ) );
-			}
 		}
+
+		// Set payment method to Cash on Delivery
+		$payment_gateways = WC()->payment_gateways->payment_gateways();
+		$cod_gateway = isset( $payment_gateways['cod'] ) ? $payment_gateways['cod'] : null;
+		
+		if ( $cod_gateway && $cod_gateway->enabled === 'yes' ) {
+			$order->set_payment_method( 'cod' );
+			$order->set_payment_method_title( $cod_gateway->get_title() );
+		} else {
+			// Fallback: set manually
+			$order->set_payment_method( 'cod' );
+			$order->set_payment_method_title( __( 'Cash on Delivery', 'woocommerce' ) );
+		}
+
+		// Calculate shipping costs
+		$this->calculate_shipping( $order );
 
 		// Set order status
 		$order->set_status( 'pending' );
 		$order->calculate_totals();
 		$order->save();
 
+		// Add order note
+		$order->add_order_note( __( 'Order created via AI Store Assistant chatbot.', 'ai-store-assistant' ) );
+
 		return $order;
+	}
+
+	/**
+	 * Parse address string into components.
+	 *
+	 * @param string $address Full address string.
+	 * @return array Address components.
+	 */
+	private function parse_address( $address ) {
+		$parts = array(
+			'street'   => '',
+			'city'     => '',
+			'postcode' => '',
+			'country'  => '',
+		);
+
+		// Try to parse address - simple approach
+		$lines = explode( "\n", $address );
+		$parts['street'] = trim( $lines[0] );
+
+		// Try to extract city, postcode, country from remaining lines
+		if ( count( $lines ) > 1 ) {
+			$last_line = trim( end( $lines ) );
+			// Try to match postcode pattern (varies by country)
+			if ( preg_match( '/\b\d{4,6}\b/', $last_line, $matches ) ) {
+				$parts['postcode'] = $matches[0];
+			}
+			// Extract city (usually before postcode)
+			$city_part = preg_replace( '/\b\d{4,6}\b.*/', '', $last_line );
+			$parts['city'] = trim( $city_part );
+		}
+
+		// Default country if not specified
+		$parts['country'] = get_option( 'woocommerce_default_country', '' );
+		if ( ! empty( $parts['country'] ) && strpos( $parts['country'], ':' ) !== false ) {
+			$parts['country'] = explode( ':', $parts['country'] )[0];
+		}
+
+		return $parts;
+	}
+
+	/**
+	 * Calculate shipping costs for order.
+	 *
+	 * @param WC_Order $order Order object.
+	 */
+	private function calculate_shipping( $order ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->shipping() ) {
+			return;
+		}
+
+		$shipping_methods = WC()->shipping->get_shipping_methods();
+		
+		// Try to use flat rate shipping if available
+		if ( isset( $shipping_methods['flat_rate'] ) && $shipping_methods['flat_rate']->enabled === 'yes' ) {
+			$shipping_item = new WC_Order_Item_Shipping();
+			$shipping_item->set_method_title( $shipping_methods['flat_rate']->get_title() );
+			$shipping_item->set_method_id( 'flat_rate' );
+			$shipping_item->set_total( $this->get_shipping_cost() );
+			$order->add_item( $shipping_item );
+		} else {
+			// Fallback: add a simple shipping cost
+			$shipping_item = new WC_Order_Item_Shipping();
+			$shipping_item->set_method_title( __( 'Standard Shipping', 'ai-store-assistant' ) );
+			$shipping_item->set_method_id( 'standard' );
+			$shipping_item->set_total( $this->get_shipping_cost() );
+			$order->add_item( $shipping_item );
+		}
+	}
+
+	/**
+	 * Get shipping cost.
+	 *
+	 * @return float Shipping cost.
+	 */
+	private function get_shipping_cost() {
+		// Try to get from WooCommerce settings
+		$flat_rate_cost = get_option( 'woocommerce_flat_rate_cost', '' );
+		if ( ! empty( $flat_rate_cost ) && is_numeric( $flat_rate_cost ) ) {
+			return floatval( $flat_rate_cost );
+		}
+
+		// Default shipping cost (can be configured later)
+		$default_shipping = apply_filters( 'asa_default_shipping_cost', 5.00 );
+		return floatval( $default_shipping );
 	}
 }
 

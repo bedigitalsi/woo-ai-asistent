@@ -188,6 +188,15 @@ class ASA_Chat_Endpoint {
 			$parts[] = "\n\n## Response Format:\nRespond with valid JSON: {\"assistant_reply\": \"Your text response\", \"products\": []}";
 		}
 
+		// Order creation instructions
+		$enable_orders = $this->settings->get_setting( 'enable_order_creation', false );
+		if ( $enable_orders ) {
+			// Get shipping cost for context
+			$shipping_cost = $this->get_shipping_cost_for_prompt();
+			
+			$parts[] = "\n\n## Order Creation:\nYou can help customers create orders via chat. When a customer wants to place an order, you MUST collect ALL of the following information before creating the order:\n\nREQUIRED INFORMATION:\n1. Products they want (product IDs and quantities) - ask which products and how many\n2. Customer email address - ask for a valid email\n3. Customer phone number - ask for phone number for delivery coordination\n4. Full delivery address - ask for complete address including street, city, postal code, and country\n\nIMPORTANT ORDER CREATION RULES:\n- Do NOT create an order until you have ALL required information listed above\n- If ANY information is missing, politely but firmly ask for it. Explain why each piece is needed\n- Be persistent - don't create an order with incomplete information\n- Always inform the customer about shipping costs: Standard shipping cost is approximately " . $shipping_cost . "\n- Payment method is Cash on Delivery (customer pays when receiving the order)\n- Always calculate and confirm the total order amount (products + shipping) before creating\n- When you have ALL required information, respond with JSON that includes an \"order\" object:\n{\n  \"assistant_reply\": \"Perfect! I have all the information. Your order total will be [amount] including shipping. Creating your order now...\",\n  \"products\": [],\n  \"order\": {\n    \"products\": [{\"id\": 123, \"qty\": 1}],\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"Street 123\\nCity, Postal Code\\nCountry\"\n  }\n}\n\n- The address should be formatted with line breaks (\\n) for better readability\n- Be friendly, helpful, and professional when collecting information\n- If customer refuses to provide required information, politely explain that you cannot create an order without it";
+		}
+
 		return implode( '', $parts );
 	}
 
@@ -258,6 +267,7 @@ class ASA_Chat_Endpoint {
 			// Valid JSON response
 			$assistant_reply = isset( $decoded['assistant_reply'] ) ? $decoded['assistant_reply'] : $response;
 			$products = isset( $decoded['products'] ) && is_array( $decoded['products'] ) ? $decoded['products'] : array();
+			$order_data = isset( $decoded['order'] ) && is_array( $decoded['order'] ) ? $decoded['order'] : null;
 
 			// Validate and enrich product data
 			$validated_products = array();
@@ -270,10 +280,17 @@ class ASA_Chat_Endpoint {
 				}
 			}
 
-			return array(
+			$result = array(
 				'assistant_reply' => sanitize_text_field( $assistant_reply ),
 				'products'        => $validated_products,
 			);
+
+			// If order data is present, validate and include it
+			if ( $order_data ) {
+				$result['order'] = $this->validate_order_data( $order_data );
+			}
+
+			return $result;
 		}
 
 		// Fallback: treat as plain text
@@ -281,6 +298,76 @@ class ASA_Chat_Endpoint {
 			'assistant_reply' => sanitize_text_field( $response ),
 			'products'        => array(),
 		);
+	}
+
+	/**
+	 * Validate order data from AI response.
+	 *
+	 * @param array $order_data Order data from AI.
+	 * @return array|null Validated order data or null if invalid.
+	 */
+	private function validate_order_data( $order_data ) {
+		// Check required fields
+		if ( ! isset( $order_data['products'] ) || ! is_array( $order_data['products'] ) || empty( $order_data['products'] ) ) {
+			return null;
+		}
+
+		if ( empty( $order_data['email'] ) || ! is_email( $order_data['email'] ) ) {
+			return null;
+		}
+
+		if ( empty( $order_data['phone'] ) ) {
+			return null;
+		}
+
+		if ( empty( $order_data['address'] ) ) {
+			return null;
+		}
+
+		// Validate products
+		$validated_products = array();
+		foreach ( $order_data['products'] as $product ) {
+			if ( ! isset( $product['id'] ) || ! isset( $product['qty'] ) ) {
+				continue;
+			}
+			$product_obj = wc_get_product( absint( $product['id'] ) );
+			if ( $product_obj && $product_obj->is_purchasable() ) {
+				$validated_products[] = array(
+					'id'  => absint( $product['id'] ),
+					'qty' => absint( $product['qty'] ),
+				);
+			}
+		}
+
+		if ( empty( $validated_products ) ) {
+			return null;
+		}
+
+		return array(
+			'products' => $validated_products,
+			'email'    => sanitize_email( $order_data['email'] ),
+			'phone'    => sanitize_text_field( $order_data['phone'] ),
+			'address'  => sanitize_textarea_field( $order_data['address'] ),
+		);
+	}
+
+	/**
+	 * Get shipping cost for system prompt.
+	 *
+	 * @return string Shipping cost formatted string.
+	 */
+	private function get_shipping_cost_for_prompt() {
+		// Try to get from WooCommerce settings
+		$flat_rate_cost = get_option( 'woocommerce_flat_rate_cost', '' );
+		if ( ! empty( $flat_rate_cost ) && is_numeric( $flat_rate_cost ) ) {
+			$currency_symbol = get_woocommerce_currency_symbol();
+			return $currency_symbol . number_format( floatval( $flat_rate_cost ), 2 );
+		}
+
+		// Default shipping cost
+		$default_shipping = apply_filters( 'asa_default_shipping_cost', 5.00 );
+		$currency_symbol = get_woocommerce_currency_symbol();
+		return $currency_symbol . number_format( floatval( $default_shipping ), 2 );
 	}
 }
 
