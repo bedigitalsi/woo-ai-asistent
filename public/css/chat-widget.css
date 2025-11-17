@@ -41,7 +41,7 @@
 
 /* Chat Panel */
 .asa-chat-panel {
-	display: flex;
+	display: none;
 	flex-direction: column;
 	width: 380px;
 	height: 600px;
@@ -49,6 +49,13 @@
 	border-radius: 12px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 	overflow: hidden;
+	position: absolute;
+	bottom: 80px;
+	right: 0;
+}
+
+.asa-chat-panel.asa-chat-open {
+	display: flex;
 }
 
 /* Chat Header */
