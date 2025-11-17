@@ -218,6 +218,12 @@
 						createOrder( data.order );
 					} else if ( data.order ) {
 						console.log( 'Order data incomplete:', data.order );
+						console.log( 'Missing fields:', {
+							hasProducts: !!data.order.products,
+							hasEmail: !!data.order.email,
+							hasPhone: !!data.order.phone,
+							hasAddress: !!data.order.address
+						} );
 					}
 				} else {
 					addMessage( 'assistant', asaChatData.i18n.error );
@@ -292,9 +298,27 @@
 					messages.push( { role: 'assistant', content: successMessage } );
 				} else if ( data.code ) {
 					// Error from server
-					const errorMessage = data.message || asaChatData.i18n.orderError || 'Unable to create order. Please try again.';
+					let errorMessage = data.message || asaChatData.i18n.orderError || 'Unable to create order. Please try again.';
+					
+					// Add more specific error messages
+					if ( data.code === 'no_products' ) {
+						errorMessage = 'No valid products could be added to the order. Please check the product IDs.';
+					} else if ( data.code === 'invalid_email' ) {
+						errorMessage = 'Invalid email address provided.';
+					} else if ( data.code === 'invalid_phone' ) {
+						errorMessage = 'Phone number is required.';
+					} else if ( data.code === 'invalid_address' ) {
+						errorMessage = 'Delivery address is required.';
+					} else if ( data.code === 'woocommerce_missing' || data.code === 'woocommerce_not_initialized' ) {
+						errorMessage = 'WooCommerce is not available. Please ensure WooCommerce is installed and active.';
+					} else if ( data.code === 'order_calculation_failed' ) {
+						errorMessage = 'Failed to calculate order totals. Please try again or contact support.';
+					}
+					
+					console.error( 'Order creation error:', data );
 					addMessage( 'assistant', errorMessage );
 				} else {
+					console.error( 'Unknown order creation error:', data );
 					addMessage( 'assistant', asaChatData.i18n.orderError || 'Unable to create order. Please try again.' );
 				}
 			})

@@ -70,6 +70,12 @@ class ASA_Order_Handler {
 		$products = $request->get_param( 'products' );
 		$customer = $request->get_param( 'customer' );
 
+		// Log for debugging (remove in production)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'ASA Order Creation - Products: ' . print_r( $products, true ) );
+			error_log( 'ASA Order Creation - Customer: ' . print_r( $customer, true ) );
+		}
+
 		if ( ! is_array( $products ) || empty( $products ) ) {
 			return new WP_Error( 'invalid_products', __( 'Invalid products data.', 'ai-store-assistant' ), array( 'status' => 400 ) );
 		}
@@ -119,8 +125,14 @@ class ASA_Order_Handler {
 	 * @return WC_Order|WP_Error Order object or error.
 	 */
 	private function create_order( $products, $customer = array() ) {
+		// Ensure WooCommerce is loaded
 		if ( ! function_exists( 'wc_create_order' ) ) {
 			return new WP_Error( 'woocommerce_missing', __( 'WooCommerce is not available.', 'ai-store-assistant' ), array( 'status' => 500 ) );
+		}
+
+		// Ensure WooCommerce is initialized
+		if ( ! function_exists( 'WC' ) || ! WC() ) {
+			return new WP_Error( 'woocommerce_not_initialized', __( 'WooCommerce is not initialized.', 'ai-store-assistant' ), array( 'status' => 500 ) );
 		}
 
 		$order = wc_create_order();
@@ -130,6 +142,7 @@ class ASA_Order_Handler {
 		}
 
 		// Add products
+		$products_added = 0;
 		foreach ( $products as $item ) {
 			if ( ! isset( $item['id'] ) || ! isset( $item['qty'] ) ) {
 				continue;
@@ -138,12 +151,27 @@ class ASA_Order_Handler {
 			$product_id = absint( $item['id'] );
 			$quantity   = absint( $item['qty'] );
 
+			if ( $quantity <= 0 ) {
+				continue;
+			}
+
 			$product = wc_get_product( $product_id );
-			if ( ! $product || ! $product->is_purchasable() ) {
+			if ( ! $product ) {
+				continue;
+			}
+
+			if ( ! $product->is_purchasable() ) {
 				continue;
 			}
 
 			$order->add_product( $product, $quantity );
+			$products_added++;
+		}
+
+		// Check if any products were added
+		if ( $products_added === 0 ) {
+			wp_delete_post( $order->get_id(), true );
+			return new WP_Error( 'no_products', __( 'No valid products could be added to the order.', 'ai-store-assistant' ), array( 'status' => 400 ) );
 		}
 
 		// Set customer data
@@ -223,8 +251,15 @@ class ASA_Order_Handler {
 
 		// Set order status
 		$order->set_status( 'pending' );
-		$order->calculate_totals();
-		$order->save();
+		
+		// Calculate totals
+		try {
+			$order->calculate_totals();
+			$order->save();
+		} catch ( Exception $e ) {
+			wp_delete_post( $order->get_id(), true );
+			return new WP_Error( 'order_calculation_failed', __( 'Failed to calculate order totals: ', 'ai-store-assistant' ) . $e->getMessage(), array( 'status' => 500 ) );
+		}
 
 		// Add order note
 		$order->add_order_note( __( 'Order created via AI Store Assistant chatbot.', 'ai-store-assistant' ) );
