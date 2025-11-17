@@ -42,6 +42,8 @@ class ASA_Settings {
 		'enable_order_creation'    => false,
 		'max_knowledge_items'      => 20,
 		'chat_widget_color'        => '#0073aa',
+		'chat_widget_title'        => 'AI Assistant',
+		'chat_welcome_message'     => 'Hello! How can I help you today?',
 	);
 
 	/**
@@ -134,6 +136,22 @@ class ASA_Settings {
 			'asa_settings_page',
 			'asa_appearance_section'
 		);
+
+		add_settings_field(
+			'chat_widget_title',
+			__( 'Chat Widget Title', 'ai-store-assistant' ),
+			array( $this, 'chat_widget_title_field_callback' ),
+			'asa_settings_page',
+			'asa_appearance_section'
+		);
+
+		add_settings_field(
+			'chat_welcome_message',
+			__( 'Welcome Message', 'ai-store-assistant' ),
+			array( $this, 'chat_welcome_message_field_callback' ),
+			'asa_settings_page',
+			'asa_appearance_section'
+		);
 	}
 
 	/**
@@ -188,6 +206,18 @@ class ASA_Settings {
 			$sanitized['chat_widget_color'] = $color ? $color : '#0073aa';
 		} else {
 			$sanitized['chat_widget_color'] = $existing['chat_widget_color'];
+		}
+
+		if ( isset( $input['chat_widget_title'] ) ) {
+			$sanitized['chat_widget_title'] = sanitize_text_field( $input['chat_widget_title'] );
+		} else {
+			$sanitized['chat_widget_title'] = $existing['chat_widget_title'];
+		}
+
+		if ( isset( $input['chat_welcome_message'] ) ) {
+			$sanitized['chat_welcome_message'] = sanitize_textarea_field( $input['chat_welcome_message'] );
+		} else {
+			$sanitized['chat_welcome_message'] = $existing['chat_welcome_message'];
 		}
 
 		return wp_parse_args( $sanitized, $this->defaults );
@@ -292,6 +322,30 @@ class ASA_Settings {
 		?>
 		<input type="color" name="asa_settings[chat_widget_color]" value="<?php echo esc_attr( $value ); ?>" class="asa-color-picker" />
 		<p class="description"><?php esc_html_e( 'Choose the main color for the chat widget (button, header, and accents).', 'ai-store-assistant' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Chat widget title field callback.
+	 */
+	public function chat_widget_title_field_callback() {
+		$settings = $this->get_settings();
+		$value    = isset( $settings['chat_widget_title'] ) ? $settings['chat_widget_title'] : 'AI Assistant';
+		?>
+		<input type="text" name="asa_settings[chat_widget_title]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
+		<p class="description"><?php esc_html_e( 'The title displayed in the chat widget header.', 'ai-store-assistant' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Chat welcome message field callback.
+	 */
+	public function chat_welcome_message_field_callback() {
+		$settings = $this->get_settings();
+		$value    = isset( $settings['chat_welcome_message'] ) ? $settings['chat_welcome_message'] : 'Hello! How can I help you today?';
+		?>
+		<textarea name="asa_settings[chat_welcome_message]" rows="3" cols="50" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
+		<p class="description"><?php esc_html_e( 'The initial welcome message shown when the chat widget opens.', 'ai-store-assistant' ); ?></p>
 		<?php
 	}
 

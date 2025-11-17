@@ -62,6 +62,10 @@ class ASA_Frontend {
 			true
 		);
 
+		// Get widget settings
+		$widget_title = $this->settings->get_setting( 'chat_widget_title', 'AI Assistant' );
+		$welcome_message = $this->settings->get_setting( 'chat_welcome_message', 'Hello! How can I help you today?' );
+
 		// Localize script with REST API data
 		wp_localize_script(
 			'asa-chat-widget-js',
@@ -69,14 +73,14 @@ class ASA_Frontend {
 			array(
 				'restUrl' => rest_url( 'ai-store-assistant/v1/chat' ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'widgetTitle' => $widget_title,
+				'welcomeMessage' => $welcome_message,
 				'i18n'    => array(
 					'error'           => __( 'Sorry, there was an error. Please try again.', 'ai-store-assistant' ),
 					'apiError'        => __( 'Assistant is temporarily unavailable.', 'ai-store-assistant' ),
 					'send'            => __( 'Send', 'ai-store-assistant' ),
 					'typeMessage'     => __( 'Type your message...', 'ai-store-assistant' ),
 					'viewProduct'     => __( 'View Product', 'ai-store-assistant' ),
-					'assistantTitle'  => __( 'AI Assistant', 'ai-store-assistant' ),
-					'welcomeMessage'  => __( 'Hello! How can I help you today?', 'ai-store-assistant' ),
 				),
 			)
 		);
@@ -99,7 +103,7 @@ class ASA_Frontend {
 			</div>
 			<div id="asa-chat-panel" class="asa-chat-panel" style="display: none;">
 				<div class="asa-chat-header">
-					<h3><?php esc_html_e( 'AI Assistant', 'ai-store-assistant' ); ?></h3>
+					<h3 id="asa-chat-title"><?php echo esc_html( $this->settings->get_setting( 'chat_widget_title', 'AI Assistant' ) ); ?></h3>
 					<button id="asa-chat-close" class="asa-chat-close" aria-label="<?php esc_attr_e( 'Close chat', 'ai-store-assistant' ); ?>">×</button>
 				</div>
 				<div id="asa-chat-messages" class="asa-chat-messages"></div>

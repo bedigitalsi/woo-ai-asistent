@@ -38,8 +38,16 @@
 			}
 		});
 
+		// Set widget title
+		if ( asaChatData.widgetTitle ) {
+			const titleElement = document.getElementById( 'asa-chat-title' );
+			if ( titleElement ) {
+				titleElement.textContent = asaChatData.widgetTitle;
+			}
+		}
+
 		// Add welcome message
-		const welcomeMessage = asaChatData.i18n.welcomeMessage || 'Hello! How can I help you today?';
+		const welcomeMessage = asaChatData.welcomeMessage || 'Hello! How can I help you today?';
 		addMessage( 'assistant', welcomeMessage );
 	}
 
