@@ -1,0 +1,292 @@
+/**
+ * Chat widget frontend styles
+ *
+ * @package AI_Store_Assistant
+ */
+
+/* Chat Widget Container */
+.asa-chat-widget {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 9999;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Chat Button */
+.asa-chat-button {
+	width: 60px;
+	height: 60px;
+	background: #0073aa;
+	color: #fff;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transition: all 0.3s ease;
+}
+
+.asa-chat-button:hover {
+	background: #005a87;
+	transform: scale(1.05);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.asa-chat-button svg {
+	width: 28px;
+	height: 28px;
+}
+
+/* Chat Panel */
+.asa-chat-panel {
+	display: flex;
+	flex-direction: column;
+	width: 380px;
+	height: 600px;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+}
+
+/* Chat Header */
+.asa-chat-header {
+	background: #0073aa;
+	color: #fff;
+	padding: 16px 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.asa-chat-header h3 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.asa-chat-close {
+	background: none;
+	border: none;
+	color: #fff;
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: background 0.2s;
+}
+
+.asa-chat-close:hover {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+/* Chat Messages */
+.asa-chat-messages {
+	flex: 1;
+	overflow-y: auto;
+	padding: 20px;
+	background: #f5f5f5;
+}
+
+.asa-chat-message {
+	margin-bottom: 16px;
+	display: flex;
+	flex-direction: column;
+}
+
+.asa-chat-message-user {
+	align-items: flex-end;
+}
+
+.asa-chat-message-assistant {
+	align-items: flex-start;
+}
+
+.asa-chat-message-content {
+	max-width: 75%;
+	padding: 12px 16px;
+	border-radius: 18px;
+	word-wrap: break-word;
+	line-height: 1.5;
+}
+
+.asa-chat-message-user .asa-chat-message-content {
+	background: #0073aa;
+	color: #fff;
+	border-bottom-right-radius: 4px;
+}
+
+.asa-chat-message-assistant .asa-chat-message-content {
+	background: #fff;
+	color: #333;
+	border-bottom-left-radius: 4px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading Indicator */
+.asa-chat-loading .asa-chat-loading-dots {
+	display: inline-flex;
+	gap: 4px;
+}
+
+.asa-chat-loading .asa-chat-loading-dots span {
+	animation: asa-bounce 1.4s infinite ease-in-out;
+	animation-fill-mode: both;
+}
+
+.asa-chat-loading .asa-chat-loading-dots span:nth-child(1) {
+	animation-delay: -0.32s;
+}
+
+.asa-chat-loading .asa-chat-loading-dots span:nth-child(2) {
+	animation-delay: -0.16s;
+}
+
+@keyframes asa-bounce {
+	0%, 80%, 100% {
+		transform: scale(0);
+		opacity: 0.5;
+	}
+	40% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+/* Product Cards */
+.asa-chat-products {
+	margin-top: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-width: 75%;
+}
+
+.asa-chat-product-card {
+	background: #fff;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: column;
+}
+
+.asa-chat-product-image {
+	width: 100%;
+	height: 150px;
+	object-fit: cover;
+}
+
+.asa-chat-product-info {
+	padding: 12px;
+}
+
+.asa-chat-product-name {
+	font-weight: 600;
+	font-size: 14px;
+	margin-bottom: 6px;
+	color: #333;
+}
+
+.asa-chat-product-price {
+	font-size: 16px;
+	font-weight: 700;
+	color: #0073aa;
+	margin-bottom: 10px;
+	white-space: normal;
+	word-wrap: break-word;
+	line-height: 1.4;
+}
+
+.asa-chat-product-button {
+	display: inline-block;
+	padding: 8px 16px;
+	background: #0073aa;
+	color: #fff;
+	text-decoration: none;
+	border-radius: 4px;
+	font-size: 13px;
+	transition: background 0.2s;
+}
+
+.asa-chat-product-button:hover {
+	background: #005a87;
+}
+
+/* Chat Input Container */
+.asa-chat-input-container {
+	display: flex;
+	padding: 16px;
+	background: #fff;
+	border-top: 1px solid #e0e0e0;
+	gap: 8px;
+}
+
+.asa-chat-input {
+	flex: 1;
+	padding: 12px 16px;
+	border: 1px solid #ddd;
+	border-radius: 24px;
+	font-size: 14px;
+	outline: none;
+	transition: border-color 0.2s;
+}
+
+.asa-chat-input:focus {
+	border-color: #0073aa;
+}
+
+.asa-chat-input:disabled {
+	background: #f5f5f5;
+	cursor: not-allowed;
+}
+
+.asa-chat-send {
+	padding: 12px 24px;
+	background: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 24px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 600;
+	transition: background 0.2s;
+}
+
+.asa-chat-send:hover:not(:disabled) {
+	background: #005a87;
+}
+
+.asa-chat-send:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+	.asa-chat-widget {
+		bottom: 0;
+		right: 0;
+		left: 0;
+	}
+
+	.asa-chat-panel {
+		width: 100%;
+		height: 100vh;
+		border-radius: 0;
+	}
+
+	.asa-chat-button {
+		bottom: 20px;
+		right: 20px;
+	}
+}
+
