@@ -32,6 +32,9 @@ Thumbs.db
 *.bak
 *.backup
 
+# Release ZIP files (created by scripts)
+ai-store-assistant-v*.zip
+
 # WordPress specific
 wp-config.php
 .htaccess

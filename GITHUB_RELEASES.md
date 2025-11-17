@@ -107,6 +107,7 @@ git push
 2. **Version Match**: The tag version should match the version in `ai-store-assistant.php`
 3. **Public Repository**: The repository must be public for the update system to work (or use a personal access token for private repos)
 4. **Cache**: WordPress caches update checks for 12 hours. Use "Check again" button to force refresh.
+5. **Folder Name**: GitHub ZIP files extract to `woo-ai-asistent-vX.X.X` folder. The automatic updater handles this correctly, but for manual installation, rename the folder to `ai-store-assistant` before uploading. See `RELEASE_ZIP_INSTRUCTIONS.md` for details.
 
 ## Troubleshooting
 

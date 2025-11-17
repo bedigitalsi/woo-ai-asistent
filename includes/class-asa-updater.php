@@ -206,6 +206,8 @@ class ASA_Updater {
 	 * @return string Download URL.
 	 */
 	private function get_download_url( $version ) {
+		// GitHub creates ZIP files with repo-name-version folder structure
+		// The updater's post_install method handles extracting and moving files correctly
 		return sprintf(
 			'https://github.com/%s/%s/archive/refs/tags/v%s.zip',
 			$this->owner,

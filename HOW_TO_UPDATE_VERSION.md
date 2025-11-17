@@ -62,15 +62,26 @@ After updating the version:
    git push
    ```
 
-2. **Create a GitHub release:**
+2. **Create a properly named ZIP file** (Important!):
+   - Run the release script to create a ZIP with correct folder name:
+   - Mac/Linux: `./create-release-zip.sh 1.0.5`
+   - Windows: `create-release-zip.bat 1.0.5`
+   - This creates `ai-store-assistant-v1.0.5.zip` with `ai-store-assistant` folder inside
+
+3. **Create a GitHub release:**
    - Go to: https://github.com/bedigitalsi/woo-ai-asistent/releases
    - Click "Create a new release"
    - **Tag version**: `v1.0.5` (must start with `v`)
    - **Release title**: `Version 1.0.5`
    - **Description**: List your changes
+   - **Attach the ZIP file** you created (`ai-store-assistant-v1.0.5.zip`) as a release asset
    - Click "Publish release"
+   
+   **Note**: Users can download either:
+   - The auto-generated ZIP (requires folder rename) - `woo-ai-asistent-v1.0.5.zip`
+   - Your custom ZIP (ready to use) - `ai-store-assistant-v1.0.5.zip` (attach as asset)
 
-3. **Test the update:**
+4. **Test the update:**
    - Go to WordPress admin → WooCommerce → AI Store Assistant
    - Click "Check for Updates"
    - You should see the new version available

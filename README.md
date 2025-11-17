@@ -27,16 +27,31 @@ A WordPress plugin that integrates with the OpenAI API to provide a product-awar
    - Go to [Releases](https://github.com/bedigitalsi/woo-ai-asistent/releases)
    - Download the latest `vX.X.X.zip` file
 
-2. **Upload to WordPress**
+2. **Prepare the ZIP file** (Important!)
+   
+   **Option A - Use the release script** (Recommended):
+   - After creating a GitHub release, use the included script to create a properly named ZIP:
+   - Mac/Linux: `./create-release-zip.sh 1.0.6`
+   - Windows: `create-release-zip.bat 1.0.6`
+   - This creates `ai-store-assistant-v1.0.6.zip` with correct folder structure
+   
+   **Option B - Manual rename**:
+   - Extract the downloaded ZIP file
+   - You'll see a folder named `woo-ai-asistent-vX.X.X`
+   - **Rename this folder to `ai-store-assistant`** (this is required!)
+   - Create a new ZIP file from the renamed `ai-store-assistant` folder
+
+3. **Upload to WordPress**
    - Go to WordPress admin → Plugins → Add New
    - Click "Upload Plugin"
-   - Choose the downloaded ZIP file
+   - Choose the newly created ZIP file (with `ai-store-assistant` folder)
    - Click "Install Now" then "Activate"
 
-3. **Automatic Updates**
+4. **Automatic Updates**
    - Once installed, WordPress will automatically check for updates
    - You'll see update notifications in Plugins page when new versions are released
    - Click "Update now" to update directly from WordPress admin
+   - **Note**: Automatic updates handle folder renaming automatically - you only need to rename for initial manual installation
 
 ### Option 2: Manual Installation
 
